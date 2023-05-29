@@ -24,9 +24,17 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn run<I: Image>(&self, image: impl Into<RunnableImage<I>>) -> Container<'_, I> {
-        let image = image.into();
+    pub fn run_with_args<I: Image>(&self, image: I, args: I::Args) -> Container<'_, I> {
+        let runnable_image: RunnableImage<I> = (image, args).into();
+        self.run_core(runnable_image)
+    }
 
+    pub fn run<I: Image>(&self, image: impl Into<RunnableImage<I>>) -> Container<'_, I> {
+        let runnable_image = image.into();
+        self.run_core(runnable_image)
+    }
+
+    fn run_core<I: Image>(&self, image: RunnableImage<I>) -> Container<'_, I> {
         if let Some(network) = image.network() {
             if self.inner.create_network_if_not_exists(network) {
                 let mut guard = self
